@@ -6,7 +6,7 @@ hierarchy with a live bar chart and a metrics table, and surfaces optimization/s
 
 > **Status:** in progress — built incrementally. See commit history.
 
-- **Live demo:** _coming soon_
+- **Live demo:** https://atomity-frontend-challenge-weld.vercel.app/
 - **Stack:** Next.js (App Router) · TypeScript · Tailwind CSS v4 · Framer Motion · TanStack Query
 
 ## Getting started
