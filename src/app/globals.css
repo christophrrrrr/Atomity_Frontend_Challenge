@@ -1,20 +1,49 @@
 @import "tailwindcss";
+@import "../tokens/theme.css";
 
-/* Baseline only — the full design-token system lands in the next step. */
-:root {
-  --background: #f7f8f9;
-  --foreground: #0e0f11;
+/* ---- Base layer ---------------------------------------------------------- */
+
+html {
+  /* Fluid base font size keeps typography readable from mobile to desktop. */
+  font-size: clamp(15px, 0.9rem + 0.2vw, 17px);
+  scroll-behavior: smooth;
+  color-scheme: light;
 }
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+html.dark {
+  color-scheme: dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background-color: var(--canvas);
+  color: var(--ink);
   font-family: var(--font-sans), system-ui, sans-serif;
+  /* Smooth the canvas <-> surface swap when toggling themes. */
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+::selection {
+  background-color: color-mix(in oklab, var(--brand) 28%, transparent);
+}
+
+/* Consistent, visible keyboard focus everywhere. */
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Respect users who prefer less motion: neutralize transitions/animations
+ * globally as a safety net (components also branch on this in JS). */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }

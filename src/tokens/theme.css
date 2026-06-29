@@ -1,0 +1,116 @@
+/*
+ * Design tokens — single source of truth for color, radius, shadow, motion.
+ * Components never hardcode hex; they reference these via Tailwind utilities
+ * (generated from @theme below) or the typed `tokens` object in tokens.ts.
+ *
+ * Theming strategy: semantic variables are redefined under `.dark`, so a
+ * component written with `bg-surface text-ink` automatically adapts — no
+ * per-component `dark:` overrides needed.
+ */
+
+/* Class-based dark mode (toggled on <html> by the ThemeProvider). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  /* Surfaces */
+  --canvas: #f4f6f7;
+  --surface: #ffffff;
+  --surface-2: #f1f3f5;
+  --surface-3: #e9ecef;
+
+  /* Text */
+  --ink: #0e1116;
+  --ink-2: #5b6573;
+  --ink-3: #8a929e;
+
+  /* Lines & focus */
+  --line: #e4e7eb;
+  --line-strong: #d3d8de;
+  --focus: #2f5bff;
+
+  /* Brand (green) */
+  --brand: #16a34a;
+  --brand-strong: #15803d;
+  --brand-bar: #57cf8c;
+  --brand-bar-2: #34b46f;
+  --brand-soft: #e7f7ee;
+  --brand-contrast: #06301b;
+
+  /* Status (efficiency, savings, alerts) */
+  --positive: #16a34a;
+  --warning: #d9822b;
+  --negative: #d93f3f;
+
+  /* Elevation */
+  --shadow-sm: 0 1px 2px rgb(16 24 32 / 0.06), 0 1px 1px rgb(16 24 32 / 0.04);
+  --shadow-md: 0 2px 4px rgb(16 24 32 / 0.05), 0 12px 28px rgb(16 24 32 / 0.08);
+  --shadow-lg: 0 8px 16px rgb(16 24 32 / 0.08), 0 24px 48px rgb(16 24 32 / 0.12);
+}
+
+.dark {
+  --canvas: #0b0e12;
+  --surface: #141a21;
+  --surface-2: #1c242d;
+  --surface-3: #232c36;
+
+  --ink: #e6edf3;
+  --ink-2: #9aa4b2;
+  --ink-3: #6e7884;
+
+  --line: #232c36;
+  --line-strong: #2e3a46;
+  --focus: #5b8cff;
+
+  --brand: #3fd27e;
+  --brand-strong: #5be39a;
+  --brand-bar: #3fb873;
+  --brand-bar-2: #2e9d5f;
+  --brand-soft: #11271c;
+  --brand-contrast: #04130b;
+
+  --positive: #3fd27e;
+  --warning: #e0a458;
+  --negative: #f2645a;
+
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-md: 0 2px 4px rgb(0 0 0 / 0.4), 0 12px 28px rgb(0 0 0 / 0.5);
+  --shadow-lg: 0 8px 16px rgb(0 0 0 / 0.5), 0 24px 48px rgb(0 0 0 / 0.6);
+}
+
+/* Map tokens to Tailwind's theme so utilities exist:
+ * bg-canvas, bg-surface, text-ink, text-ink-2, border-line, bg-brand,
+ * text-brand, text-positive, rounded-card, shadow-card, etc. */
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-focus: var(--focus);
+
+  --color-brand: var(--brand);
+  --color-brand-strong: var(--brand-strong);
+  --color-brand-bar: var(--brand-bar);
+  --color-brand-bar-2: var(--brand-bar-2);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-contrast: var(--brand-contrast);
+
+  --color-positive: var(--positive);
+  --color-warning: var(--warning);
+  --color-negative: var(--negative);
+
+  --radius-card: 16px;
+  --radius-panel: 22px;
+
+  --shadow-card: var(--shadow-md);
+  --shadow-pop: var(--shadow-lg);
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
