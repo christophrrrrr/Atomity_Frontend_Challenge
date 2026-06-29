@@ -25,6 +25,9 @@ interface CostTableProps {
   entityLabel: string;
   sort: SortState;
   onSort: (key: SortKey) => void;
+  /** Linked-hover state shared with the bar chart. */
+  hoveredId: string | null;
+  onHover: (id: string | null) => void;
 }
 
 export function CostTable({
@@ -33,6 +36,8 @@ export function CostTable({
   entityLabel,
   sort,
   onSort,
+  hoveredId,
+  onHover,
 }: CostTableProps) {
   return (
     <div className="overflow-x-auto">
@@ -61,7 +66,14 @@ export function CostTable({
         <tbody>
           {isLoading
             ? Array.from({ length: 8 }).map((_, i) => <SkeletonRow key={i} />)
-            : nodes.map((node) => <CostTableRow key={node.id} node={node} />)}
+            : nodes.map((node) => (
+                <CostTableRow
+                  key={node.id}
+                  node={node}
+                  isHighlighted={node.id === hoveredId}
+                  onHover={onHover}
+                />
+              ))}
         </tbody>
       </table>
     </div>

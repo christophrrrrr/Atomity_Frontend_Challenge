@@ -1,11 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { Card } from "@/components/primitives/Card";
 import { useCostData } from "@/hooks/useCostData";
 import { useNodeSort } from "@/hooks/useNodeSort";
 import { LEVEL_SINGULAR } from "@/lib/levels";
 import { DEFAULT_TIME_RANGE } from "@/lib/timeRanges";
 import type { Level } from "@/lib/types";
+import { CostBarChart } from "./CostBarChart";
 import { CostTable } from "./CostTable";
 
 /**
@@ -22,6 +24,8 @@ export function CostExplorerSection() {
     range,
   );
   const { sorted, sort, toggleSort } = useNodeSort(data);
+  // Linked-hover state: hovering a bar or row highlights the matching pair.
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   return (
     <section
@@ -48,12 +52,22 @@ export function CostExplorerSection() {
         <ErrorState message={(error as Error)?.message} onRetry={() => refetch()} />
       ) : (
         <Card className="overflow-hidden">
+          <div className="border-b border-line p-4 sm:p-6">
+            <CostBarChart
+              nodes={sorted}
+              isLoading={isPending}
+              hoveredId={hoveredId}
+              onHover={setHoveredId}
+            />
+          </div>
           <CostTable
             nodes={sorted}
             isLoading={isPending}
             entityLabel={LEVEL_SINGULAR[level]}
             sort={sort}
             onSort={toggleSort}
+            hoveredId={hoveredId}
+            onHover={setHoveredId}
           />
         </Card>
       )}

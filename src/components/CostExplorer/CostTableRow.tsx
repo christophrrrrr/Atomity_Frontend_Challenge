@@ -4,9 +4,23 @@ import type { CostNode } from "@/lib/types";
 import { EfficiencyMeter } from "./EfficiencyMeter";
 
 /** A single data row: entity name + per-resource costs + efficiency + total. */
-export function CostTableRow({ node }: { node: CostNode }) {
+export function CostTableRow({
+  node,
+  isHighlighted,
+  onHover,
+}: {
+  node: CostNode;
+  isHighlighted: boolean;
+  onHover: (id: string | null) => void;
+}) {
   return (
-    <tr className="border-t border-line transition-colors hover:bg-surface-2">
+    <tr
+      onMouseEnter={() => onHover(node.id)}
+      onMouseLeave={() => onHover(null)}
+      className={`border-t border-line transition-colors ${
+        isHighlighted ? "bg-surface-2" : ""
+      }`}
+    >
       <th
         scope="row"
         className="whitespace-nowrap px-4 py-3 text-start font-medium text-ink"
