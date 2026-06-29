@@ -10,6 +10,9 @@ interface CostBarChartProps {
   /** Currently highlighted node id, shared with the table for linked hover. */
   hoveredId: string | null;
   onHover: (id: string | null) => void;
+  /** Whether bars can be drilled into (false at the deepest level). */
+  canDrill: boolean;
+  onSelect: (node: CostNode) => void;
 }
 
 const GRIDLINES = 4;
@@ -20,6 +23,8 @@ export function CostBarChart({
   isLoading,
   hoveredId,
   onHover,
+  canDrill,
+  onSelect,
 }: CostBarChartProps) {
   const max = Math.max(1, ...nodes.map((n) => n.metrics.total));
 
@@ -61,11 +66,18 @@ export function CostBarChart({
                       onMouseLeave={() => onHover(null)}
                       onFocus={() => onHover(node.id)}
                       onBlur={() => onHover(null)}
-                      aria-label={`${node.name}, ${formatCurrency(node.metrics.total)}`}
+                      onClick={canDrill ? () => onSelect(node) : undefined}
+                      aria-label={
+                        canDrill
+                          ? `Drill into ${node.name}, ${formatCurrency(node.metrics.total)}`
+                          : `${node.name}, ${formatCurrency(node.metrics.total)}`
+                      }
                       style={{ blockSize: `${heightPct}%` }}
                       className={`group relative w-full max-w-[46px] rounded-t-md transition-[background-color,opacity,transform] duration-200 hover:-translate-y-0.5 hover:bg-brand ${
                         active ? "bg-brand" : "bg-brand-bar"
-                      } ${dimmed ? "opacity-40" : "opacity-100"}`}
+                      } ${dimmed ? "opacity-40" : "opacity-100"} ${
+                        canDrill ? "cursor-pointer" : "cursor-default"
+                      }`}
                     >
                       <span
                         className={`pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-ink px-1.5 py-0.5 text-[11px] font-medium text-canvas transition-opacity ${

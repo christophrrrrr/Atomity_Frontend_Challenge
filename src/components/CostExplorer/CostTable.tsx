@@ -28,6 +28,9 @@ interface CostTableProps {
   /** Linked-hover state shared with the bar chart. */
   hoveredId: string | null;
   onHover: (id: string | null) => void;
+  /** Whether rows can be drilled into (false at the deepest level). */
+  canDrill: boolean;
+  onSelect: (node: CostNode) => void;
 }
 
 export function CostTable({
@@ -38,6 +41,8 @@ export function CostTable({
   onSort,
   hoveredId,
   onHover,
+  canDrill,
+  onSelect,
 }: CostTableProps) {
   return (
     <div className="overflow-x-auto">
@@ -72,6 +77,8 @@ export function CostTable({
                   node={node}
                   isHighlighted={node.id === hoveredId}
                   onHover={onHover}
+                  canDrill={canDrill}
+                  onSelect={onSelect}
                 />
               ))}
         </tbody>

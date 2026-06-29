@@ -8,10 +8,14 @@ export function CostTableRow({
   node,
   isHighlighted,
   onHover,
+  canDrill,
+  onSelect,
 }: {
   node: CostNode;
   isHighlighted: boolean;
   onHover: (id: string | null) => void;
+  canDrill: boolean;
+  onSelect: (node: CostNode) => void;
 }) {
   return (
     <tr
@@ -25,7 +29,31 @@ export function CostTableRow({
         scope="row"
         className="whitespace-nowrap px-4 py-3 text-start font-medium text-ink"
       >
-        {node.name}
+        {canDrill ? (
+          <button
+            type="button"
+            onClick={() => onSelect(node)}
+            className="group/name inline-flex items-center gap-1 rounded text-ink transition-colors hover:text-brand"
+          >
+            <span>{node.name}</span>
+            <svg
+              viewBox="0 0 24 24"
+              className="size-3.5 text-ink-3 transition-colors group-hover/name:text-brand"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path
+                d="M9 6l6 6-6 6"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+        ) : (
+          node.name
+        )}
       </th>
       {RESOURCES.map((resource) => (
         <td

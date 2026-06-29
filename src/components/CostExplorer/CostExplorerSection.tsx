@@ -1,31 +1,61 @@
 "use client";
 
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useState } from "react";
 import { Card } from "@/components/primitives/Card";
 import { useCostData } from "@/hooks/useCostData";
+import { useDrillPath } from "@/hooks/useDrillPath";
 import { useNodeSort } from "@/hooks/useNodeSort";
-import { LEVEL_SINGULAR } from "@/lib/levels";
+import { childLevel, LEVEL_SINGULAR } from "@/lib/levels";
 import { DEFAULT_TIME_RANGE } from "@/lib/timeRanges";
-import type { Level } from "@/lib/types";
+import type { CostNode } from "@/lib/types";
+import { Breadcrumb, type Crumb } from "./Breadcrumb";
 import { CostBarChart } from "./CostBarChart";
 import { CostTable } from "./CostTable";
 
 /**
- * Cost explorer section. Loads the cluster level and renders a sortable metrics
- * table with loading / error / success states; the bar chart, drill-down, and
- * toolbar are layered on in later steps.
+ * Cost explorer section. Loads the current drill view (a level + parent), and
+ * renders a bar chart and sortable table with linked hover, loading / error /
+ * success states, and an animated transition between drill levels. Drilling
+ * back up is served instantly from the TanStack Query cache.
  */
 export function CostExplorerSection() {
   const range = DEFAULT_TIME_RANGE;
-  const level: Level = "cluster";
+  const { path, level, parent, drillInto, goToDepth } = useDrillPath();
   const { data, isPending, isError, error, refetch } = useCostData(
     level,
-    null,
+    parent,
     range,
   );
   const { sorted, sort, toggleSort } = useNodeSort(data);
-  // Linked-hover state: hovering a bar or row highlights the matching pair.
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [direction, setDirection] = useState(1);
+  const reduceMotion = useReducedMotion();
+
+  const canDrill = childLevel(level) !== null;
+
+  const crumbs: Crumb[] = [
+    { key: "root", label: "All clusters", depth: 0 },
+    ...path.map((node, i) => ({ key: node.id, label: node.name, depth: i + 1 })),
+  ];
+
+  function handleDrill(node: CostNode) {
+    setDirection(1);
+    setHoveredId(null);
+    drillInto(node);
+  }
+
+  function handleNavigate(depth: number) {
+    setDirection(-1);
+    setHoveredId(null);
+    goToDepth(depth);
+  }
+
+  const variants = {
+    enter: (dir: number) => ({ opacity: 0, x: reduceMotion ? 0 : dir * 28 }),
+    center: { opacity: 1, x: 0 },
+    exit: (dir: number) => ({ opacity: 0, x: reduceMotion ? 0 : dir * -28 }),
+  };
 
   return (
     <section
@@ -40,35 +70,58 @@ export function CostExplorerSection() {
           id="cost-explorer-heading"
           className="mt-2 text-2xl font-semibold tracking-tight text-ink sm:text-3xl"
         >
-          Cluster cost breakdown
+          Cost explorer
         </h2>
         <p className="mt-2 max-w-prose text-ink-2">
-          Spend across every cluster, derived live from the API. Sort any column
-          to compare.
+          Click a bar or a name to drill from clusters into namespaces and pods.
+          Drilling back is instant — served from cache.
         </p>
+
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+          <Breadcrumb crumbs={crumbs} onNavigate={handleNavigate} />
+          <span className="rounded-full bg-brand-soft px-3 py-1 text-xs font-medium text-brand-strong">
+            Aggregated by {LEVEL_SINGULAR[level]}
+          </span>
+        </div>
       </header>
 
       {isError ? (
         <ErrorState message={(error as Error)?.message} onRetry={() => refetch()} />
       ) : (
         <Card className="overflow-hidden">
-          <div className="border-b border-line p-4 sm:p-6">
-            <CostBarChart
-              nodes={sorted}
-              isLoading={isPending}
-              hoveredId={hoveredId}
-              onHover={setHoveredId}
-            />
-          </div>
-          <CostTable
-            nodes={sorted}
-            isLoading={isPending}
-            entityLabel={LEVEL_SINGULAR[level]}
-            sort={sort}
-            onSort={toggleSort}
-            hoveredId={hoveredId}
-            onHover={setHoveredId}
-          />
+          <AnimatePresence mode="wait" initial={false} custom={direction}>
+            <motion.div
+              key={`${level}:${parent?.id ?? "root"}`}
+              custom={direction}
+              variants={variants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: reduceMotion ? 0 : 0.25, ease: "easeOut" }}
+            >
+              <div className="border-b border-line p-4 sm:p-6">
+                <CostBarChart
+                  nodes={sorted}
+                  isLoading={isPending}
+                  hoveredId={hoveredId}
+                  onHover={setHoveredId}
+                  canDrill={canDrill}
+                  onSelect={handleDrill}
+                />
+              </div>
+              <CostTable
+                nodes={sorted}
+                isLoading={isPending}
+                entityLabel={LEVEL_SINGULAR[level]}
+                sort={sort}
+                onSort={toggleSort}
+                hoveredId={hoveredId}
+                onHover={setHoveredId}
+                canDrill={canDrill}
+                onSelect={handleDrill}
+              />
+            </motion.div>
+          </AnimatePresence>
         </Card>
       )}
     </section>
