@@ -25,8 +25,17 @@ export interface CostNode {
   name: string;
   /** Id of the parent node, or null at the cluster level. */
   parentId: string | null;
+  /**
+   * Fraction of the parent's total this node represents (0–1, range-independent;
+   * 1 at the cluster root). Lets the whole drill path be rescaled instantly when
+   * the time range changes.
+   */
+  share: number;
   metrics: Metrics;
 }
+
+/** What the bar heights represent — overall total or a single resource. */
+export type BarMetric = "total" | ResourceKey;
 
 export type TimeRangeId = "7d" | "30d" | "90d";
 

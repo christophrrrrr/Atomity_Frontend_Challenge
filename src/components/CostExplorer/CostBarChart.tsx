@@ -2,11 +2,13 @@
 
 import { Skeleton } from "@/components/primitives/Skeleton";
 import { formatCompactCurrency, formatCurrency } from "@/lib/format";
-import type { CostNode } from "@/lib/types";
+import type { BarMetric, CostNode } from "@/lib/types";
 
 interface CostBarChartProps {
   nodes: CostNode[];
   isLoading: boolean;
+  /** Which metric the bar heights represent. */
+  metricKey: BarMetric;
   /** Currently highlighted node id, shared with the table for linked hover. */
   hoveredId: string | null;
   onHover: (id: string | null) => void;
@@ -21,12 +23,13 @@ const SKELETON_HEIGHTS = [82, 64, 95, 48, 73, 38, 56, 30];
 export function CostBarChart({
   nodes,
   isLoading,
+  metricKey,
   hoveredId,
   onHover,
   canDrill,
   onSelect,
 }: CostBarChartProps) {
-  const max = Math.max(1, ...nodes.map((n) => n.metrics.total));
+  const max = Math.max(1, ...nodes.map((n) => n.metrics[metricKey]));
 
   return (
     <div>
@@ -52,7 +55,8 @@ export function CostBarChart({
                 </div>
               ))
             : nodes.map((node) => {
-                const heightPct = Math.max(2, (node.metrics.total / max) * 100);
+                const value = node.metrics[metricKey];
+                const heightPct = Math.max(2, (value / max) * 100);
                 const active = hoveredId === node.id;
                 const dimmed = hoveredId !== null && !active;
                 return (
@@ -69,8 +73,8 @@ export function CostBarChart({
                       onClick={canDrill ? () => onSelect(node) : undefined}
                       aria-label={
                         canDrill
-                          ? `Drill into ${node.name}, ${formatCurrency(node.metrics.total)}`
-                          : `${node.name}, ${formatCurrency(node.metrics.total)}`
+                          ? `Drill into ${node.name}, ${formatCurrency(value)}`
+                          : `${node.name}, ${formatCurrency(value)}`
                       }
                       style={{ blockSize: `${heightPct}%` }}
                       className={`group relative w-full max-w-[46px] rounded-t-md transition-[background-color,opacity,transform] duration-200 hover:-translate-y-0.5 hover:bg-brand ${
@@ -84,7 +88,7 @@ export function CostBarChart({
                           active ? "opacity-100" : "opacity-0"
                         }`}
                       >
-                        {formatCompactCurrency(node.metrics.total)}
+                        {formatCompactCurrency(value)}
                       </span>
                     </button>
                   </div>

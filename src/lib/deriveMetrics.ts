@@ -1,4 +1,10 @@
-import type { Metrics, ResourceBreakdown, ResourceKey } from "./types";
+import type {
+  CostNode,
+  Metrics,
+  ResourceBreakdown,
+  ResourceKey,
+  TimeRange,
+} from "./types";
 
 /**
  * Cost numbers are *derived* from the fetched JSONPlaceholder ids rather than
@@ -94,6 +100,25 @@ export function buildMetrics(total: number, seed: string): Metrics {
     total: exactTotal,
     efficiency: deriveEfficiency(seed),
   };
+}
+
+/**
+ * Recompute a drill path's metrics for a new time range, in place and
+ * synchronously. A cluster's total comes straight from its id + the new
+ * multiplier; deeper nodes scale their parent's new total by their stored,
+ * range-independent `share`. Keeps the user's drill position consistent when
+ * the time range changes, with no extra fetches.
+ */
+export function rescalePath(path: CostNode[], range: TimeRange): CostNode[] {
+  const result: CostNode[] = [];
+  path.forEach((node, i) => {
+    const total =
+      node.level === "cluster"
+        ? clusterTotal(node.sourceId, range.multiplier)
+        : Math.round(result[i - 1].metrics.total * node.share);
+    result.push({ ...node, metrics: buildMetrics(total, node.id) });
+  });
+  return result;
 }
 
 function indexOfMax(arr: number[]): number {

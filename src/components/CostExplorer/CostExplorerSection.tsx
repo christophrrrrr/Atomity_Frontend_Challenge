@@ -8,20 +8,25 @@ import { useDrillPath } from "@/hooks/useDrillPath";
 import { useNodeSort } from "@/hooks/useNodeSort";
 import { childLevel, LEVEL_SINGULAR } from "@/lib/levels";
 import { DEFAULT_TIME_RANGE } from "@/lib/timeRanges";
-import type { CostNode } from "@/lib/types";
+import type { BarMetric, CostNode, TimeRange } from "@/lib/types";
 import { Breadcrumb, type Crumb } from "./Breadcrumb";
 import { CostBarChart } from "./CostBarChart";
 import { CostTable } from "./CostTable";
+import { ResourceFilter } from "./ResourceFilter";
+import { TimeRangeSelector } from "./TimeRangeSelector";
 
 /**
- * Cost explorer section. Loads the current drill view (a level + parent), and
- * renders a bar chart and sortable table with linked hover, loading / error /
- * success states, and an animated transition between drill levels. Drilling
- * back up is served instantly from the TanStack Query cache.
+ * Cost explorer section. Loads the current drill view (level + parent + time
+ * range), and renders a bar chart and sortable table with linked hover,
+ * loading / error / success states, and an animated transition between drill
+ * levels. Drilling back up — and revisiting a time range — is served instantly
+ * from the TanStack Query cache.
  */
 export function CostExplorerSection() {
-  const range = DEFAULT_TIME_RANGE;
-  const { path, level, parent, drillInto, goToDepth } = useDrillPath();
+  const [range, setRange] = useState<TimeRange>(DEFAULT_TIME_RANGE);
+  const [barMetric, setBarMetric] = useState<BarMetric>("total");
+  const { path, level, parent, drillInto, goToDepth, rescaleForRange } =
+    useDrillPath();
   const { data, isPending, isError, error, refetch } = useCostData(
     level,
     parent,
@@ -51,6 +56,13 @@ export function CostExplorerSection() {
     goToDepth(depth);
   }
 
+  function handleRangeChange(next: TimeRange) {
+    setHoveredId(null);
+    setRange(next);
+    // Keep the drill position; rescale ancestor totals for the new range.
+    rescaleForRange(next);
+  }
+
   const variants = {
     enter: (dir: number) => ({ opacity: 0, x: reduceMotion ? 0 : dir * 28 }),
     center: { opacity: 1, x: 0 },
@@ -64,7 +76,7 @@ export function CostExplorerSection() {
     >
       <header className="mb-8">
         <p className="font-mono text-xs uppercase tracking-[0.2em] text-brand">
-          {range.label}
+          Spend analytics
         </p>
         <h2
           id="cost-explorer-heading"
@@ -78,10 +90,13 @@ export function CostExplorerSection() {
         </p>
 
         <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-          <Breadcrumb crumbs={crumbs} onNavigate={handleNavigate} />
-          <span className="rounded-full bg-brand-soft px-3 py-1 text-xs font-medium text-brand-strong">
-            Aggregated by {LEVEL_SINGULAR[level]}
-          </span>
+          <div className="flex flex-wrap items-center gap-3">
+            <Breadcrumb crumbs={crumbs} onNavigate={handleNavigate} />
+            <span className="rounded-full bg-brand-soft px-3 py-1 text-xs font-medium text-brand-strong">
+              Aggregated by {LEVEL_SINGULAR[level]}
+            </span>
+          </div>
+          <TimeRangeSelector value={range} onChange={handleRangeChange} />
         </div>
       </header>
 
@@ -89,6 +104,13 @@ export function CostExplorerSection() {
         <ErrorState message={(error as Error)?.message} onRetry={() => refetch()} />
       ) : (
         <Card className="overflow-hidden">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-4 py-3 sm:px-6">
+            <span className="text-xs uppercase tracking-wide text-ink-3">
+              Bars sized by
+            </span>
+            <ResourceFilter value={barMetric} onChange={setBarMetric} />
+          </div>
+
           <AnimatePresence mode="wait" initial={false} custom={direction}>
             <motion.div
               key={`${level}:${parent?.id ?? "root"}`}
@@ -103,6 +125,7 @@ export function CostExplorerSection() {
                 <CostBarChart
                   nodes={sorted}
                   isLoading={isPending}
+                  metricKey={barMetric}
                   hoveredId={hoveredId}
                   onHover={setHoveredId}
                   canDrill={canDrill}

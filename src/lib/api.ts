@@ -53,6 +53,7 @@ export async function fetchClusters(
         level: "cluster",
         name: clusterName(user.id),
         parentId: null,
+        share: 1,
         metrics: buildMetrics(total, seed),
       };
     })
@@ -77,6 +78,7 @@ export async function fetchNamespaces(
       level: "namespace",
       name: namespaceName(post.id),
       parentId: parent.id,
+      share: parent.metrics.total > 0 ? totals[i] / parent.metrics.total : 0,
       metrics: buildMetrics(totals[i], seeds[i]),
     }))
     .sort(byTotalDesc);
@@ -100,6 +102,7 @@ export async function fetchPods(
       level: "pod",
       name: podName(comment.id),
       parentId: parent.id,
+      share: parent.metrics.total > 0 ? totals[i] / parent.metrics.total : 0,
       metrics: buildMetrics(totals[i], seeds[i]),
     }))
     .sort(byTotalDesc);

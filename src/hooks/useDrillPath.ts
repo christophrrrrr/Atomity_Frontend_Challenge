@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
+import { rescalePath } from "@/lib/deriveMetrics";
 import { childLevel } from "@/lib/levels";
-import type { CostNode, Level } from "@/lib/types";
+import type { CostNode, Level, TimeRange } from "@/lib/types";
 
 /**
  * Tracks the drill path as a stack of selected ancestor nodes.
@@ -29,5 +30,10 @@ export function useDrillPath() {
     setPath((prev) => prev.slice(0, depth));
   }, []);
 
-  return { path, level, parent, drillInto, goToDepth };
+  /** Recompute the path's metrics for a new time range, keeping the position. */
+  const rescaleForRange = useCallback((range: TimeRange) => {
+    setPath((prev) => rescalePath(prev, range));
+  }, []);
+
+  return { path, level, parent, drillInto, goToDepth, rescaleForRange };
 }
