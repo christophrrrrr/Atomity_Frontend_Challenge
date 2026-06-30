@@ -15,7 +15,7 @@ export default function Home() {
 
       <main>
         <section className="mx-auto w-full max-w-5xl px-5 pt-16 text-center sm:pt-24">
-          <h1 className="text-balance text-4xl font-semibold tracking-tight text-ink sm:text-5xl">
+          <h1 className="text-balance text-[clamp(2.25rem,6vw,3.5rem)] font-semibold leading-[1.05] tracking-tight text-ink">
             Cloud Cost Explorer
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-balance text-ink-2">

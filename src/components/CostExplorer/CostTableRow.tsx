@@ -61,13 +61,22 @@ export function CostTableRow({
           key={resource.key}
           className="px-4 py-3 text-end tabular-nums text-ink-2"
         >
+          <span className="cost-cell-label" aria-hidden="true">
+            {resource.label}
+          </span>
           {formatCurrency(node.metrics[resource.key])}
         </td>
       ))}
       <td className="px-4 py-3 text-end">
+        <span className="cost-cell-label" aria-hidden="true">
+          Efficiency
+        </span>
         <EfficiencyMeter value={node.metrics.efficiency} />
       </td>
       <td className="px-4 py-3 text-end font-semibold tabular-nums text-ink">
+        <span className="cost-cell-label" aria-hidden="true">
+          Total
+        </span>
         <AnimatedNumber value={node.metrics.total} format={formatCurrency} />
       </td>
     </tr>

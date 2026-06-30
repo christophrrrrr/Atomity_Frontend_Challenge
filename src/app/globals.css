@@ -47,3 +47,67 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+/* ---- Responsive cost table ---------------------------------------------- *
+ * The table reflows into stacked cards when ITS OWN container is narrow (a
+ * container query, not a viewport breakpoint), so it adapts wherever it's
+ * placed. The <thead> stays in the accessibility tree (clipped, not removed),
+ * and each cell gets an inline label that only shows in the stacked layout.
+ * Uses native CSS nesting. */
+.cost-table-wrap {
+  container: cost-table / inline-size;
+}
+.cost-cell-label {
+  display: none;
+}
+
+@container cost-table (max-width: 42rem) {
+  .cost-table {
+    min-inline-size: 0;
+
+    & thead {
+      position: absolute;
+      clip-path: inset(50%);
+      block-size: 1px;
+      inline-size: 1px;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    & tbody {
+      display: grid;
+      gap: 0.75rem;
+      padding: 0.75rem;
+    }
+
+    & tr {
+      display: block;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-card);
+      padding: 0.5rem 0.9rem;
+    }
+
+    & th[scope="row"] {
+      display: block;
+      padding-block: 0.35rem 0.5rem;
+      font-size: 0.95rem;
+    }
+
+    & td {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding-block: 0.3rem;
+      text-align: end;
+    }
+
+    & .cost-cell-label {
+      display: inline;
+      color: var(--ink-3);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+  }
+}

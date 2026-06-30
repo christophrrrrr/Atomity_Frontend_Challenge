@@ -45,8 +45,12 @@ export function CostTable({
   onSelect,
 }: CostTableProps) {
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[680px] border-collapse text-sm">
+    <div className="cost-table-wrap overflow-x-auto">
+      <table className="cost-table w-full min-w-[680px] border-collapse text-sm">
+        <caption className="sr-only">
+          Cost breakdown by {entityLabel.toLowerCase()}: resource costs,
+          efficiency, and total.
+        </caption>
         <thead>
           <tr className="text-xs uppercase tracking-wide text-ink-3">
             <SortableHeader

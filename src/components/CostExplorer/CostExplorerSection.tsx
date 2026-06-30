@@ -81,7 +81,7 @@ export function CostExplorerSection() {
         </p>
         <h2
           id="cost-explorer-heading"
-          className="mt-2 text-2xl font-semibold tracking-tight text-ink sm:text-3xl"
+          className="mt-2 text-[clamp(1.5rem,3vw,2rem)] font-semibold tracking-tight text-ink"
         >
           Cost explorer
         </h2>
