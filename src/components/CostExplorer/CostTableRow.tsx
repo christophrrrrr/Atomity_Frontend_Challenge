@@ -1,3 +1,4 @@
+import { AnimatedNumber } from "@/components/primitives/AnimatedNumber";
 import { formatCurrency } from "@/lib/format";
 import { RESOURCES } from "@/lib/resources";
 import type { CostNode } from "@/lib/types";
@@ -67,7 +68,7 @@ export function CostTableRow({
         <EfficiencyMeter value={node.metrics.efficiency} />
       </td>
       <td className="px-4 py-3 text-end font-semibold tabular-nums text-ink">
-        {formatCurrency(node.metrics.total)}
+        <AnimatedNumber value={node.metrics.total} format={formatCurrency} />
       </td>
     </tr>
   );

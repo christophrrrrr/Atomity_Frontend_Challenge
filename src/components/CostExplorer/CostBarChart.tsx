@@ -1,5 +1,6 @@
 "use client";
 
+import { motion, useReducedMotion } from "framer-motion";
 import { Skeleton } from "@/components/primitives/Skeleton";
 import { formatCompactCurrency, formatCurrency } from "@/lib/format";
 import type { BarMetric, CostNode } from "@/lib/types";
@@ -29,6 +30,7 @@ export function CostBarChart({
   canDrill,
   onSelect,
 }: CostBarChartProps) {
+  const reduceMotion = useReducedMotion();
   const max = Math.max(1, ...nodes.map((n) => n.metrics[metricKey]));
 
   return (
@@ -44,27 +46,26 @@ export function CostBarChart({
           ))}
         </div>
 
-        <div className="relative flex h-full items-end gap-2 sm:gap-3">
+        {/* Each column is full-height + relative so the bar's % height resolves
+            against a definite box and anchors to the bottom. */}
+        <div className="relative flex h-full items-stretch gap-2 sm:gap-3">
           {isLoading
             ? SKELETON_HEIGHTS.map((h, i) => (
-                <div key={i} className="flex flex-1 items-end justify-center">
+                <div key={i} className="relative h-full flex-1">
                   <Skeleton
-                    className="w-full max-w-[46px] rounded-t-md"
-                    style={{ blockSize: `${h}%` }}
+                    className="absolute inset-x-0 bottom-0 mx-auto w-full max-w-[46px] rounded-t-md"
+                    style={{ height: `${h}%` }}
                   />
                 </div>
               ))
-            : nodes.map((node) => {
+            : nodes.map((node, index) => {
                 const value = node.metrics[metricKey];
                 const heightPct = Math.max(2, (value / max) * 100);
                 const active = hoveredId === node.id;
                 const dimmed = hoveredId !== null && !active;
                 return (
-                  <div
-                    key={node.id}
-                    className="flex flex-1 items-end justify-center"
-                  >
-                    <button
+                  <div key={node.id} className="relative h-full flex-1">
+                    <motion.button
                       type="button"
                       onMouseEnter={() => onHover(node.id)}
                       onMouseLeave={() => onHover(null)}
@@ -76,12 +77,20 @@ export function CostBarChart({
                           ? `Drill into ${node.name}, ${formatCurrency(value)}`
                           : `${node.name}, ${formatCurrency(value)}`
                       }
-                      style={{ blockSize: `${heightPct}%` }}
-                      className={`group relative w-full max-w-[46px] rounded-t-md transition-[background-color,opacity,transform] duration-200 hover:-translate-y-0.5 hover:bg-brand ${
+                      style={{ height: `${heightPct}%`, transformOrigin: "bottom" }}
+                      initial={reduceMotion ? false : { scaleY: 0, opacity: 0 }}
+                      animate={{ scaleY: 1, opacity: dimmed ? 0.4 : 1 }}
+                      whileHover={reduceMotion ? undefined : { y: -3 }}
+                      transition={{
+                        scaleY: reduceMotion
+                          ? { duration: 0 }
+                          : { delay: index * 0.04, duration: 0.5, ease: [0.22, 1, 0.36, 1] },
+                        opacity: { duration: 0.2 },
+                        y: { type: "spring", stiffness: 400, damping: 26 },
+                      }}
+                      className={`absolute inset-x-0 bottom-0 mx-auto w-full max-w-[46px] rounded-t-md transition-colors duration-200 hover:bg-brand ${
                         active ? "bg-brand" : "bg-brand-bar"
-                      } ${dimmed ? "opacity-40" : "opacity-100"} ${
-                        canDrill ? "cursor-pointer" : "cursor-default"
-                      }`}
+                      } ${canDrill ? "cursor-pointer" : "cursor-default"}`}
                     >
                       <span
                         className={`pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-ink px-1.5 py-0.5 text-[11px] font-medium text-canvas transition-opacity ${
@@ -90,7 +99,7 @@ export function CostBarChart({
                       >
                         {formatCompactCurrency(value)}
                       </span>
-                    </button>
+                    </motion.button>
                   </div>
                 );
               })}

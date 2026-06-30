@@ -6,13 +6,14 @@ import { Card } from "@/components/primitives/Card";
 import { useCostData } from "@/hooks/useCostData";
 import { useDrillPath } from "@/hooks/useDrillPath";
 import { useNodeSort } from "@/hooks/useNodeSort";
-import { childLevel, LEVEL_SINGULAR } from "@/lib/levels";
+import { childLevel, LEVEL_PLURAL, LEVEL_SINGULAR } from "@/lib/levels";
 import { DEFAULT_TIME_RANGE } from "@/lib/timeRanges";
 import type { BarMetric, CostNode, TimeRange } from "@/lib/types";
 import { Breadcrumb, type Crumb } from "./Breadcrumb";
 import { CostBarChart } from "./CostBarChart";
 import { CostTable } from "./CostTable";
 import { ResourceFilter } from "./ResourceFilter";
+import { SavingsCallout } from "./SavingsCallout";
 import { TimeRangeSelector } from "./TimeRangeSelector";
 
 /**
@@ -103,49 +104,64 @@ export function CostExplorerSection() {
       {isError ? (
         <ErrorState message={(error as Error)?.message} onRetry={() => refetch()} />
       ) : (
-        <Card className="overflow-hidden">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-4 py-3 sm:px-6">
-            <span className="text-xs uppercase tracking-wide text-ink-3">
-              Bars sized by
-            </span>
-            <ResourceFilter value={barMetric} onChange={setBarMetric} />
-          </div>
+        <motion.div
+          // `initial` must not depend on reduceMotion: it renders during SSR,
+          // and useReducedMotion differs server vs client (→ hydration mismatch).
+          // Gate the motion via duration instead.
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.15 }}
+          transition={{ duration: reduceMotion ? 0 : 0.5, ease: "easeOut" }}
+        >
+          <SavingsCallout
+            nodes={sorted}
+            unitLabel={LEVEL_PLURAL[level].toLowerCase()}
+            isLoading={isPending}
+          />
+          <Card className="overflow-hidden">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-4 py-3 sm:px-6">
+              <span className="text-xs uppercase tracking-wide text-ink-3">
+                Bars sized by
+              </span>
+              <ResourceFilter value={barMetric} onChange={setBarMetric} />
+            </div>
 
-          <AnimatePresence mode="wait" initial={false} custom={direction}>
-            <motion.div
-              key={`${level}:${parent?.id ?? "root"}`}
-              custom={direction}
-              variants={variants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{ duration: reduceMotion ? 0 : 0.25, ease: "easeOut" }}
-            >
-              <div className="border-b border-line p-4 sm:p-6">
-                <CostBarChart
+            <AnimatePresence mode="wait" initial={false} custom={direction}>
+              <motion.div
+                key={`${level}:${parent?.id ?? "root"}`}
+                custom={direction}
+                variants={variants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ duration: reduceMotion ? 0 : 0.25, ease: "easeOut" }}
+              >
+                <div className="border-b border-line p-4 sm:p-6">
+                  <CostBarChart
+                    nodes={sorted}
+                    isLoading={isPending}
+                    metricKey={barMetric}
+                    hoveredId={hoveredId}
+                    onHover={setHoveredId}
+                    canDrill={canDrill}
+                    onSelect={handleDrill}
+                  />
+                </div>
+                <CostTable
                   nodes={sorted}
                   isLoading={isPending}
-                  metricKey={barMetric}
+                  entityLabel={LEVEL_SINGULAR[level]}
+                  sort={sort}
+                  onSort={toggleSort}
                   hoveredId={hoveredId}
                   onHover={setHoveredId}
                   canDrill={canDrill}
                   onSelect={handleDrill}
                 />
-              </div>
-              <CostTable
-                nodes={sorted}
-                isLoading={isPending}
-                entityLabel={LEVEL_SINGULAR[level]}
-                sort={sort}
-                onSort={toggleSort}
-                hoveredId={hoveredId}
-                onHover={setHoveredId}
-                canDrill={canDrill}
-                onSelect={handleDrill}
-              />
-            </motion.div>
-          </AnimatePresence>
-        </Card>
+              </motion.div>
+            </AnimatePresence>
+          </Card>
+        </motion.div>
       )}
     </section>
   );
