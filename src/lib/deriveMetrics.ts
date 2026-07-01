@@ -91,6 +91,16 @@ function deriveEfficiency(seed: string): number {
   return Math.round(6 + r * 88);
 }
 
+/**
+ * Period-over-period change for a node, as a signed fraction in ~[-0.28, 0.28]
+ * (e.g. 0.12 = spend up 12% vs the previous period). Deterministic per node and
+ * independent of the selected range.
+ */
+export function deriveTrend(seed: string): number {
+  const r = rng(`trend:${seed}`)();
+  return Math.round((r * 0.56 - 0.28) * 100) / 100;
+}
+
 /** Build a full Metrics object for a node from its total and a seed. */
 export function buildMetrics(total: number, seed: string): Metrics {
   const resources = splitResources(total, seed);

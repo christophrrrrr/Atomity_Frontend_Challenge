@@ -1,4 +1,6 @@
 import { AnimatedNumber } from "@/components/primitives/AnimatedNumber";
+import { TrendBadge } from "@/components/primitives/TrendBadge";
+import { deriveTrend } from "@/lib/deriveMetrics";
 import { formatCurrency } from "@/lib/format";
 import { RESOURCES } from "@/lib/resources";
 import type { CostNode } from "@/lib/types";
@@ -73,11 +75,16 @@ export function CostTableRow({
         </span>
         <EfficiencyMeter value={node.metrics.efficiency} />
       </td>
-      <td className="px-4 py-3 text-end font-semibold tabular-nums text-ink">
+      <td className="px-4 py-3 text-end">
         <span className="cost-cell-label" aria-hidden="true">
           Total
         </span>
-        <AnimatedNumber value={node.metrics.total} format={formatCurrency} />
+        <span className="inline-flex flex-col items-end gap-0.5">
+          <span className="font-semibold tabular-nums text-ink">
+            <AnimatedNumber value={node.metrics.total} format={formatCurrency} />
+          </span>
+          <TrendBadge value={deriveTrend(node.id)} />
+        </span>
       </td>
     </tr>
   );
