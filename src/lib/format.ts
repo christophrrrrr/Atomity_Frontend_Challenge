@@ -13,8 +13,6 @@ const usdCompact = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 1,
 });
 
-const decimal = new Intl.NumberFormat("en-US");
-
 /** "$2,463" */
 export function formatCurrency(value: number): string {
   return usd.format(value);
@@ -23,11 +21,6 @@ export function formatCurrency(value: number): string {
 /** "$2.5K" — for tight spaces like axis labels. */
 export function formatCompactCurrency(value: number): string {
   return usdCompact.format(value);
-}
-
-/** "1,368" */
-export function formatNumber(value: number): string {
-  return decimal.format(value);
 }
 
 /** "43%" */

@@ -19,24 +19,25 @@ export function AnimatedNumber({
   durationMs?: number;
 }) {
   const reduceMotion = useReducedMotion();
-  const [display, setDisplay] = useState(reduceMotion ? value : 0);
-  const displayRef = useRef(display);
-  displayRef.current = display;
+  const [display, setDisplay] = useState(0);
+  // Last animated value, tracked outside render so a new animation can ease
+  // from wherever the previous one left off.
+  const latest = useRef(0);
   const frameRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
-    if (reduceMotion) {
-      setDisplay(value);
-      return;
-    }
-    const from = displayRef.current;
+    // Reduced motion renders `value` directly (below), so nothing to animate.
+    if (reduceMotion) return;
+    const from = latest.current;
     if (from === value) return;
 
     const start = performance.now();
     const step = (now: number) => {
       const t = Math.min(1, (now - start) / durationMs);
       const eased = 1 - Math.pow(1 - t, 3); // easeOutCubic
-      setDisplay(from + (value - from) * eased);
+      const current = from + (value - from) * eased;
+      latest.current = current;
+      setDisplay(current);
       if (t < 1) frameRef.current = requestAnimationFrame(step);
     };
     frameRef.current = requestAnimationFrame(step);
@@ -45,5 +46,9 @@ export function AnimatedNumber({
     };
   }, [value, durationMs, reduceMotion]);
 
-  return <span className="tabular-nums">{format(display)}</span>;
+  return (
+    <span className="tabular-nums">
+      {format(reduceMotion ? value : display)}
+    </span>
+  );
 }

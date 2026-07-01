@@ -3,7 +3,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { useState } from "react";
-import { ThemeProvider } from "@/components/theme/ThemeProvider";
 
 function makeQueryClient() {
   return new QueryClient({
@@ -21,7 +20,8 @@ function makeQueryClient() {
   });
 }
 
-/** Client provider tree: data caching (TanStack Query) + theming. */
+/** Client provider tree: data caching (TanStack Query). Theming is handled by
+ *  the pre-paint init script + the CSS-driven ThemeToggle, so no provider. */
 export function Providers({ children }: { children: React.ReactNode }) {
   // One client per browser session; created lazily so it isn't shared across
   // requests on the server.
@@ -29,7 +29,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>{children}</ThemeProvider>
+      {children}
       <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-left" />
     </QueryClientProvider>
   );
