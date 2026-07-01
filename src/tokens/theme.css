@@ -21,7 +21,7 @@
   /* Text */
   --ink: #0e1116;
   --ink-2: #5b6573;
-  --ink-3: #8a929e;
+  --ink-3: #667080; /* darkened for AA contrast on light surfaces */
 
   /* Lines & focus */
   --line: #e4e7eb;
@@ -55,7 +55,7 @@
 
   --ink: #e6edf3;
   --ink-2: #9aa4b2;
-  --ink-3: #6e7884;
+  --ink-3: #8b95a3; /* lightened for AA contrast on dark surfaces */
 
   --line: #232c36;
   --line-strong: #2e3a46;
