@@ -17,7 +17,10 @@ optimization insight that estimates how much money you could claw back.
   served from cache.
 - **Sort** any table column, **switch the time range** (7D / 30D / 90D), and **re-size the bars**
   by a single resource (CPU, RAM, …).
-- **Hover a bar or a row** — its partner highlights and the other bars dim.
+- **Hover a bar or a row** — its partner highlights and the other bars dim. Bars are **tinted by
+  efficiency** (red = wasteful, green = lean), so you can see where the savings are.
+- **Copy the URL after drilling** — it restores that exact view on reload, and browser
+  back/forward step through your path.
 - **Toggle dark mode** (top-right). **Shrink the window** and the table folds into cards.
 
 ---
@@ -145,9 +148,12 @@ toggle. No component libraries.
 - **Option B** — a multi-cloud "unified view" (AWS / Azure / GCP / On-Prem) reusing the same tokens
   and data layer.
 - **Split raw fetch from derivation** so switching time ranges doesn't re-request the raw list.
-- **URL-synced drill state** so a view is shareable / deep-linkable, with browser back/forward.
 - **Virtualized rows** for very large levels, plus a real sparkline of spend over time.
 - **Deeper a11y** — roving `tabindex` on the segmented controls and a formal axe audit.
+
+> Already added beyond the core build: a chart **y-axis + period total**, **efficiency-colored
+> bars**, **period-over-period deltas**, and **deep-linkable URL state** (shareable views +
+> browser back/forward).
 
 ---
 
