@@ -133,10 +133,10 @@ toggle. No component libraries.
   position and rescales the ancestors *synchronously* (each node stores its range-independent
   `share` of its parent). I chose this over an async re-fetch specifically to avoid a cache race
   where a stale parent could poison a query key.
-- **Time range re-fetches the raw list.** Because each range is its own query key, switching ranges
-  re-requests `/users` (same raw data, different derived view). It's cached per range, but a
-  stricter design would fetch the raw list once and derive per range client-side. Called out
-  honestly; see below.
+- **Raw fetch is separate from derivation.** The raw list (`/users`, `/posts`, `/comments`) is
+  cached under a range-*independent* key, and the time-range math is applied in memory. So each list
+  is fetched exactly once, and switching ranges costs zero network. (An earlier version keyed the
+  whole query by range and re-fetched `/users` per range; this is the cleaner design.)
 - **Hand-built chart.** No charting library — the bars are just tokenized, animatable DOM, which
   keeps full control over the linked-hover and grow-in behavior.
 - **Intentional latency.** The 450 ms delay is a demo aid, not a performance characteristic.
@@ -147,13 +147,12 @@ toggle. No component libraries.
 
 - **Option B** — a multi-cloud "unified view" (AWS / Azure / GCP / On-Prem) reusing the same tokens
   and data layer.
-- **Split raw fetch from derivation** so switching time ranges doesn't re-request the raw list.
 - **Virtualized rows** for very large levels, plus a real sparkline of spend over time.
 - **Deeper a11y** — roving `tabindex` on the segmented controls and a formal axe audit.
 
-> Already added beyond the core build: a chart **y-axis + period total**, **efficiency-colored
-> bars**, **period-over-period deltas**, and **deep-linkable URL state** (shareable views +
-> browser back/forward).
+> Added beyond the core build: a chart **y-axis + period total**, **efficiency-colored bars**,
+> **period-over-period deltas**, **deep-linkable URL state** (shareable views + browser
+> back/forward), and a **raw-fetch/derive split** so time-range changes never refetch.
 
 ---
 
