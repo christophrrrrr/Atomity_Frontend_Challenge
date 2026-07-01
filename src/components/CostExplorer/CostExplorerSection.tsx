@@ -1,13 +1,19 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import {
+  AnimatePresence,
+  motion,
+  useInView,
+  useReducedMotion,
+} from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Card } from "@/components/primitives/Card";
 import { useCostData } from "@/hooks/useCostData";
 import { useDrillPath } from "@/hooks/useDrillPath";
 import { useNodeSort } from "@/hooks/useNodeSort";
-import { fetchLevel } from "@/lib/api";
+import { fetchRawLevel } from "@/lib/api";
+import { deriveNodes, type RawItem } from "@/lib/derive";
 import { childLevel, LEVEL_PLURAL, LEVEL_SINGULAR } from "@/lib/levels";
 import { DEFAULT_TIME_RANGE, TIME_RANGES } from "@/lib/timeRanges";
 import type { BarMetric, CostNode, Level, TimeRange } from "@/lib/types";
@@ -41,6 +47,10 @@ export function CostExplorerSection() {
   const [direction, setDirection] = useState(1);
   const reduceMotion = useReducedMotion();
 
+  // Triggers the staggered bar grow-in when the explorer scrolls into view.
+  const revealRef = useRef<HTMLDivElement>(null);
+  const inView = useInView(revealRef, { once: true, margin: "-60px" });
+
   const canDrill = childLevel(level) !== null;
 
   // ---- Deep-linkable URL state ------------------------------------------
@@ -63,11 +73,12 @@ export function CostExplorerSection() {
       for (const sourceId of sourceIds) {
         const levelForFetch: Level = currentLevel;
         const parentForFetch: CostNode | null = parentNode;
-        const nodes: CostNode[] = await queryClient.fetchQuery({
-          queryKey: ["costs", levelForFetch, parentForFetch?.id ?? "root", nextRange.id],
+        const raw: RawItem[] = await queryClient.fetchQuery({
+          queryKey: ["raw", levelForFetch, parentForFetch?.sourceId ?? "root"],
           queryFn: ({ signal }) =>
-            fetchLevel(levelForFetch, parentForFetch, nextRange, signal),
+            fetchRawLevel(levelForFetch, parentForFetch?.sourceId ?? null, signal),
         });
+        const nodes = deriveNodes(levelForFetch, raw, parentForFetch, nextRange);
         const match = nodes.find((n) => n.sourceId === sourceId);
         if (!match) break;
         nextPath.push(match);
@@ -168,6 +179,7 @@ export function CostExplorerSection() {
         <ErrorState message={(error as Error)?.message} onRetry={() => refetch()} />
       ) : (
         <motion.div
+          ref={revealRef}
           // `initial` must not depend on reduceMotion: it renders during SSR,
           // and useReducedMotion differs server vs client (→ hydration mismatch).
           // Gate the motion via duration instead.
@@ -189,7 +201,7 @@ export function CostExplorerSection() {
               <ResourceFilter value={barMetric} onChange={setBarMetric} />
             </div>
 
-            <AnimatePresence mode="wait" initial={false} custom={direction}>
+            <AnimatePresence mode="wait" custom={direction}>
               <motion.div
                 key={`${level}:${parent?.id ?? "root"}`}
                 custom={direction}
@@ -203,6 +215,7 @@ export function CostExplorerSection() {
                   <CostBarChart
                     nodes={sorted}
                     isLoading={isPending}
+                    inView={inView}
                     metricKey={barMetric}
                     hoveredId={hoveredId}
                     onHover={setHoveredId}

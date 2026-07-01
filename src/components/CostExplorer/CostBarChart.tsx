@@ -12,6 +12,8 @@ import { tokens } from "@/tokens/tokens";
 interface CostBarChartProps {
   nodes: CostNode[];
   isLoading: boolean;
+  /** True once the section has scrolled into view — triggers the bar grow-in. */
+  inView: boolean;
   /** Which metric the bar heights represent. */
   metricKey: BarMetric;
   /** Currently highlighted node id, shared with the table for linked hover. */
@@ -34,6 +36,7 @@ function efficiencyColor(efficiency: number): string {
 export function CostBarChart({
   nodes,
   isLoading,
+  inView,
   metricKey,
   hoveredId,
   onHover,
@@ -130,19 +133,26 @@ export function CostBarChart({
                           transformOrigin: "bottom",
                           backgroundColor: efficiencyColor(node.metrics.efficiency),
                         }}
-                        initial={reduceMotion ? false : { scaleY: 0, opacity: 0 }}
-                        animate={{ scaleY: 1, opacity: dimmed ? 0.4 : 1 }}
+                        initial={reduceMotion ? false : { scaleY: 0 }}
+                        animate={reduceMotion ? undefined : { scaleY: inView ? 1 : 0 }}
                         whileHover={reduceMotion ? undefined : { y: -3 }}
-                        transition={{
-                          scaleY: reduceMotion
+                        transition={
+                          reduceMotion
                             ? { duration: 0 }
-                            : { delay: index * 0.04, duration: 0.5, ease: [0.22, 1, 0.36, 1] },
-                          opacity: { duration: 0.2 },
-                          y: { type: "spring", stiffness: 400, damping: 26 },
-                        }}
-                        className={`absolute inset-x-0 bottom-0 mx-auto w-full max-w-[46px] rounded-t-md ${
-                          active ? "brightness-110" : ""
-                        } ${canDrill ? "cursor-pointer" : "cursor-default"}`}
+                            : {
+                                scaleY: {
+                                  delay: index * 0.04,
+                                  duration: 0.5,
+                                  ease: [0.22, 1, 0.36, 1],
+                                },
+                                y: { type: "spring", stiffness: 400, damping: 26 },
+                              }
+                        }
+                        className={`absolute inset-x-0 bottom-0 mx-auto w-full max-w-[46px] rounded-t-md transition-[opacity,filter] duration-200 ${
+                          dimmed ? "opacity-40" : "opacity-100"
+                        } ${active ? "brightness-110" : ""} ${
+                          canDrill ? "cursor-pointer" : "cursor-default"
+                        }`}
                       >
                         <span
                           className={`pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-ink px-1.5 py-0.5 text-[11px] font-medium text-canvas transition-opacity ${

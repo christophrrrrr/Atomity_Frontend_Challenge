@@ -1,6 +1,5 @@
-import { buildMetrics, clusterTotal, distributeTotal } from "./deriveMetrics";
-import { clusterName, namespaceName, podName } from "./naming";
-import type { CostNode, Level, TimeRange } from "./types";
+import type { RawItem } from "./derive";
+import type { Level } from "./types";
 
 const BASE_URL = "https://jsonplaceholder.typicode.com";
 
@@ -13,18 +12,6 @@ export const SIMULATED_LATENCY_MS = 450;
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-interface JUser {
-  id: number;
-}
-interface JPost {
-  id: number;
-  userId: number;
-}
-interface JComment {
-  id: number;
-  postId: number;
-}
-
 async function fetchJson<T>(path: string, signal?: AbortSignal): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, { signal });
   if (!res.ok) {
@@ -35,89 +22,22 @@ async function fetchJson<T>(path: string, signal?: AbortSignal): Promise<T> {
   return data;
 }
 
-const byTotalDesc = (a: CostNode, b: CostNode) => b.metrics.total - a.metrics.total;
-
-/** Clusters = JSONPlaceholder users. Totals are seeded from the user id. */
-export async function fetchClusters(
-  range: TimeRange,
-  signal?: AbortSignal,
-): Promise<CostNode[]> {
-  const users = await fetchJson<JUser[]>("/users", signal);
-  return users
-    .map<CostNode>((user) => {
-      const seed = `cluster:${user.id}`;
-      const total = clusterTotal(user.id, range.multiplier);
-      return {
-        id: seed,
-        sourceId: user.id,
-        level: "cluster",
-        name: clusterName(user.id),
-        parentId: null,
-        share: 1,
-        metrics: buildMetrics(total, seed),
-      };
-    })
-    .sort(byTotalDesc);
-}
-
-/** Namespaces = a cluster-user's posts. Their totals sum to the cluster total. */
-export async function fetchNamespaces(
-  parent: CostNode,
-  signal?: AbortSignal,
-): Promise<CostNode[]> {
-  const posts = await fetchJson<JPost[]>(
-    `/posts?userId=${parent.sourceId}`,
-    signal,
-  );
-  const seeds = posts.map((p) => `namespace:${p.id}`);
-  const totals = distributeTotal(parent.metrics.total, seeds);
-  return posts
-    .map<CostNode>((post, i) => ({
-      id: seeds[i],
-      sourceId: post.id,
-      level: "namespace",
-      name: namespaceName(post.id),
-      parentId: parent.id,
-      share: parent.metrics.total > 0 ? totals[i] / parent.metrics.total : 0,
-      metrics: buildMetrics(totals[i], seeds[i]),
-    }))
-    .sort(byTotalDesc);
-}
-
-/** Pods = a namespace-post's comments. Their totals sum to the namespace total. */
-export async function fetchPods(
-  parent: CostNode,
-  signal?: AbortSignal,
-): Promise<CostNode[]> {
-  const comments = await fetchJson<JComment[]>(
-    `/comments?postId=${parent.sourceId}`,
-    signal,
-  );
-  const seeds = comments.map((c) => `pod:${c.id}`);
-  const totals = distributeTotal(parent.metrics.total, seeds);
-  return comments
-    .map<CostNode>((comment, i) => ({
-      id: seeds[i],
-      sourceId: comment.id,
-      level: "pod",
-      name: podName(comment.id),
-      parentId: parent.id,
-      share: parent.metrics.total > 0 ? totals[i] / parent.metrics.total : 0,
-      metrics: buildMetrics(totals[i], seeds[i]),
-    }))
-    .sort(byTotalDesc);
-}
-
-/** Fetch the nodes for any view. Shared by the query hook and URL restore. */
-export function fetchLevel(
+/**
+ * Fetch the raw records for a level — clusters from users, namespaces from a
+ * user's posts, pods from a post's comments. Range-independent on purpose: the
+ * time range is applied later in `deriveNodes`, so the raw list is cached once
+ * and switching ranges never refetches.
+ */
+export function fetchRawLevel(
   level: Level,
-  parent: CostNode | null,
-  range: TimeRange,
+  parentSourceId: number | null,
   signal?: AbortSignal,
-): Promise<CostNode[]> {
-  if (level === "cluster") return fetchClusters(range, signal);
-  if (!parent) throw new Error(`A parent node is required to load ${level}s`);
+): Promise<RawItem[]> {
+  if (level === "cluster") return fetchJson<RawItem[]>("/users", signal);
+  if (parentSourceId == null) {
+    throw new Error(`A parent id is required to load ${level}s`);
+  }
   return level === "namespace"
-    ? fetchNamespaces(parent, signal)
-    : fetchPods(parent, signal);
+    ? fetchJson<RawItem[]>(`/posts?userId=${parentSourceId}`, signal)
+    : fetchJson<RawItem[]>(`/comments?postId=${parentSourceId}`, signal);
 }
