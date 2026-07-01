@@ -1,6 +1,6 @@
 import { buildMetrics, clusterTotal, distributeTotal } from "./deriveMetrics";
 import { clusterName, namespaceName, podName } from "./naming";
-import type { CostNode, TimeRange } from "./types";
+import type { CostNode, Level, TimeRange } from "./types";
 
 const BASE_URL = "https://jsonplaceholder.typicode.com";
 
@@ -106,4 +106,18 @@ export async function fetchPods(
       metrics: buildMetrics(totals[i], seeds[i]),
     }))
     .sort(byTotalDesc);
+}
+
+/** Fetch the nodes for any view. Shared by the query hook and URL restore. */
+export function fetchLevel(
+  level: Level,
+  parent: CostNode | null,
+  range: TimeRange,
+  signal?: AbortSignal,
+): Promise<CostNode[]> {
+  if (level === "cluster") return fetchClusters(range, signal);
+  if (!parent) throw new Error(`A parent node is required to load ${level}s`);
+  return level === "namespace"
+    ? fetchNamespaces(parent, signal)
+    : fetchPods(parent, signal);
 }

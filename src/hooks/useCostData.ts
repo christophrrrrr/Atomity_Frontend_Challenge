@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchClusters, fetchNamespaces, fetchPods } from "@/lib/api";
+import { fetchLevel } from "@/lib/api";
 import type { CostNode, Level, TimeRange } from "@/lib/types";
 
 /**
@@ -18,13 +18,7 @@ export function useCostData(
 ) {
   return useQuery({
     queryKey: ["costs", level, parent?.id ?? "root", range.id],
-    queryFn: ({ signal }) => {
-      if (level === "cluster") return fetchClusters(range, signal);
-      if (!parent) throw new Error(`A parent node is required to load ${level}s`);
-      return level === "namespace"
-        ? fetchNamespaces(parent, signal)
-        : fetchPods(parent, signal);
-    },
+    queryFn: ({ signal }) => fetchLevel(level, parent, range, signal),
     // Namespace/pod views can't run until their parent is known.
     enabled: level === "cluster" || parent !== null,
   });

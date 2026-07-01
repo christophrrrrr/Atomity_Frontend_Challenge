@@ -1,14 +1,17 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Card } from "@/components/primitives/Card";
 import { useCostData } from "@/hooks/useCostData";
 import { useDrillPath } from "@/hooks/useDrillPath";
 import { useNodeSort } from "@/hooks/useNodeSort";
+import { fetchLevel } from "@/lib/api";
 import { childLevel, LEVEL_PLURAL, LEVEL_SINGULAR } from "@/lib/levels";
-import { DEFAULT_TIME_RANGE } from "@/lib/timeRanges";
-import type { BarMetric, CostNode, TimeRange } from "@/lib/types";
+import { DEFAULT_TIME_RANGE, TIME_RANGES } from "@/lib/timeRanges";
+import type { BarMetric, CostNode, Level, TimeRange } from "@/lib/types";
+import { encodeExplorerState, parseExplorerState } from "@/lib/urlState";
 import { Breadcrumb, type Crumb } from "./Breadcrumb";
 import { CostBarChart } from "./CostBarChart";
 import { CostTable } from "./CostTable";
@@ -26,7 +29,7 @@ import { TimeRangeSelector } from "./TimeRangeSelector";
 export function CostExplorerSection() {
   const [range, setRange] = useState<TimeRange>(DEFAULT_TIME_RANGE);
   const [barMetric, setBarMetric] = useState<BarMetric>("total");
-  const { path, level, parent, drillInto, goToDepth, rescaleForRange } =
+  const { path, level, parent, drillInto, goToDepth, rescaleForRange, restorePath } =
     useDrillPath();
   const { data, isPending, isError, error, refetch } = useCostData(
     level,
@@ -39,6 +42,66 @@ export function CostExplorerSection() {
   const reduceMotion = useReducedMotion();
 
   const canDrill = childLevel(level) !== null;
+
+  // ---- Deep-linkable URL state ------------------------------------------
+  const queryClient = useQueryClient();
+  // True while applying state from the URL, so those changes aren't written back.
+  const restoringRef = useRef(true);
+
+  const restoreFromSearch = useCallback(
+    async (search: string) => {
+      restoringRef.current = true;
+      const { rangeId, sourceIds } = parseExplorerState(search);
+      const nextRange =
+        TIME_RANGES.find((r) => r.id === rangeId) ?? DEFAULT_TIME_RANGE;
+      setRange(nextRange);
+
+      // Rebuild the drill path by resolving each ancestor id, reusing the cache.
+      const nextPath: CostNode[] = [];
+      let parentNode: CostNode | null = null;
+      let currentLevel: Level = "cluster";
+      for (const sourceId of sourceIds) {
+        const levelForFetch: Level = currentLevel;
+        const parentForFetch: CostNode | null = parentNode;
+        const nodes: CostNode[] = await queryClient.fetchQuery({
+          queryKey: ["costs", levelForFetch, parentForFetch?.id ?? "root", nextRange.id],
+          queryFn: ({ signal }) =>
+            fetchLevel(levelForFetch, parentForFetch, nextRange, signal),
+        });
+        const match = nodes.find((n) => n.sourceId === sourceId);
+        if (!match) break;
+        nextPath.push(match);
+        parentNode = match;
+        const next = childLevel(currentLevel);
+        if (!next) break;
+        currentLevel = next;
+      }
+      restorePath(nextPath);
+      restoringRef.current = false;
+    },
+    [queryClient, restorePath],
+  );
+
+  // Apply the URL once on mount, and respond to browser back/forward.
+  useEffect(() => {
+    // Intentional: synchronize initial state from an external system (the
+    // History API / URL). It can't be a lazy useState initializer because the
+    // path restore is async and a URL-derived range would mismatch SSR.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    restoreFromSearch(window.location.search);
+    const onPopState = () => restoreFromSearch(window.location.search);
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, [restoreFromSearch]);
+
+  // Write the current view to the URL (skipped while restoring from it).
+  useEffect(() => {
+    if (restoringRef.current) return;
+    const next = window.location.pathname + encodeExplorerState(range.id, path);
+    if (next !== window.location.pathname + window.location.search) {
+      window.history.pushState(null, "", next);
+    }
+  }, [range, path]);
 
   const crumbs: Crumb[] = [
     { key: "root", label: "All clusters", depth: 0 },

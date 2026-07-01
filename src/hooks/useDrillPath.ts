@@ -35,5 +35,16 @@ export function useDrillPath() {
     setPath((prev) => rescalePath(prev, range));
   }, []);
 
-  return { path, level, parent, drillInto, goToDepth, rescaleForRange };
+  /** Replace the whole path (used when restoring state from the URL). */
+  const restorePath = useCallback((next: CostNode[]) => setPath(next), []);
+
+  return {
+    path,
+    level,
+    parent,
+    drillInto,
+    goToDepth,
+    rescaleForRange,
+    restorePath,
+  };
 }
